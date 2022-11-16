@@ -1,10 +1,10 @@
-import posts from "./tuits.js";
+// import posts from "./tuits.js";
+// let tuits = posts;
+import * as tuitsDao from '../../DAOs/tuits/tuits-dao.js'
 
-let tuits = posts;
-
-const createTuit = (req, res) => {
+const createTuit = async (req, res) => {
     const newTuit = req.body;
-    newTuit._id = (new Date()).getTime() + '';
+    // newTuit._id = (new Date()).getTime() + '';
     newTuit.liked = false;
     newTuit.likes = 0;
     newTuit.dislikes = 0;
@@ -14,29 +14,31 @@ const createTuit = (req, res) => {
     newTuit.userName = "NASA";
     newTuit.handle = "@nasa";
     newTuit.time = "2h";
-    tuits.push(newTuit);
-    res.json(newTuit);
+    const insertedTuit = await tuitsDao.createTuit(newTuit);
+    res.json(insertedTuit);
 }
 
 // find all tuits
-const findTuits = (req, res) => res.json(tuits);
+const findTuits = async (req, res) => {
+    // Mongoose model interacts with the MongoDB database asynchronously
+    const tuits = await tuitsDao.findTuits()
+    res.json(tuits);
+}
+
 
 // update tuit by id
-const updateTuit = (req, res) => {
-    const tuitdIdToUpdate = req.params.tid;
+const updateTuit = async (req, res) => {
+    const tuitId = req.params.tid;
     const updates = req.body;
-    // find tuit by id
-    const tuitIndex = tuits.findIndex((t) => t._id === tuitdIdToUpdate)
-    // load previous properties, only change properties in updates
-    tuits[tuitIndex] = {...tuits[tuitIndex], ...updates};
-    res.sendStatus(200)
+    const status = await tuitsDao.updateTuit(tuitId, updates);
+    res.json(status)
 }
 
 // delete tuit by id
-const deleteTuit = (req, res) => {
+const deleteTuit = async (req, res) => {
     const tuitId = req.params.tid;
-    tuits = tuits.filter(t => t._id !== tuitId);
-    res.sendStatus(200);
+    const status = await tuitsDao.deleteTuit(tuitId);
+    res.json(status);
 }
 
 export default (app) => {
