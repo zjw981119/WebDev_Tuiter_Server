@@ -4,7 +4,7 @@ import UsersController from "./controllers/users/users-controller.js"
 import TuitsController from "./controllers/tuits/tuits-controller.js";
 import LikesController from "./controllers/likes/likes-controller.js";
 import AuthenticationController from "./controllers/users/auth-controller.js";
-
+import MessagesController from "./controllers/messages/messages-controller.js";
 import GamesController
     from "./controllers/games/games-controller.js";
 import ReviewController
@@ -13,6 +13,8 @@ import cors from 'cors'
 import session from 'express-session'
 import dotenv from 'dotenv'
 import mongoose from "mongoose";
+import { Server } from "socket.io";
+
 
 
 dotenv.config();
@@ -66,5 +68,46 @@ TuitsController(app);
 HelloController(app);
 UsersController(app);
 LikesController(app);
+MessagesController(app);
 AuthenticationController(app);
-app.listen(process.env.PORT || 4000);
+const httpServer = app.listen(process.env.PORT || 4000);
+
+// create io, pass a http.Server instance to socket
+const io = new Server(httpServer, {
+    cors: {
+        // support cookie header
+        credentials: true,
+        // must whitelists allowed domains(if using credentials)
+        // http://localhost:3000
+        origin: ['http://localhost:3000', process.env.CORS_ORIGIN]
+    }
+})
+
+let onlineUsers = new Map();
+// create connection with client
+io.on("connection", (socket) => {
+
+    let uid = '';
+    //add online users
+    socket.on("addUser", (userId) => {
+        uid = userId
+        onlineUsers.set(userId, socket.id);
+    });
+
+    // send message
+    socket.on("sendMsg", (data) =>{
+        // find receiver
+        const receiverSocket = onlineUsers.get(data.sentTo);
+        if(receiverSocket){
+            // use socket to send received message to receiver
+            socket.to(receiverSocket).emit("receiveMsg", data.message);
+        }
+    });
+
+    //disconnect
+    socket.on("disconnect", () => {
+        //delete user
+        onlineUsers.delete(uid);
+    })
+
+})
