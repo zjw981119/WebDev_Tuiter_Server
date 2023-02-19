@@ -13,7 +13,6 @@
     "Server",
     "HTTP"
   ],
-  "author": "Zuocheng Wang",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.1.3",
